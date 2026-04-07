@@ -1,34 +1,13 @@
 import os
-from dotenv import load_dotenv
-from twilio.rest import Client
+from dotenv import load_dotenv, find_dotenv
 
-load_dotenv()
+load_dotenv(find_dotenv(), override=True)
 
-TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID", "")
-TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN", "")
-TWILIO_PHONE_NUMBER = os.getenv("TWILIO_PHONE_NUMBER", "")
+from integrations.sms import send_sms
+
 CONTRACTOR_PHONE = os.getenv("CONTRACTOR_PHONE", "")
 CONTRACTOR_NAME = os.getenv("CONTRACTOR_NAME", "ABC Plumbing and HVAC Services")
-
-
-def send_sms(to: str, body: str) -> bool:
-    if not all([TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER]):
-        print(f"[SMS MOCK] To: {to}")
-        print(f"[SMS MOCK] Body: {body}")
-        return True
-
-    try:
-        client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
-        message = client.messages.create(
-            body=body,
-            from_=TWILIO_PHONE_NUMBER,
-            to=to,
-        )
-        print(f"SMS sent to {to}: {message.sid}")
-        return True
-    except Exception as e:
-        print(f"SMS failed to {to}: {e}")
-        return False
+TWILIO_PHONE_NUMBER = os.getenv("TWILIO_PHONE_NUMBER", "")
 
 
 def notify_booking(booking_details: dict, customer_phone: str = "") -> dict:
@@ -50,14 +29,22 @@ def notify_booking(booking_details: dict, customer_phone: str = "") -> dict:
         f"Hi {name}, your appointment with {CONTRACTOR_NAME} "
         f"is confirmed for {date}"
         + (f" at {time}" if time != "TBD" else "")
-        + f". We will call you to confirm the exact time window. "
-        f"Questions? Call us at {TWILIO_PHONE_NUMBER}."
+        + f". Questions? Call us at {TWILIO_PHONE_NUMBER}."
     )
 
-    contractor_sent = send_sms(CONTRACTOR_PHONE, contractor_msg)
+    contractor_sent = False
     customer_sent = False
+
+    if CONTRACTOR_PHONE:
+        contractor_sent = send_sms(CONTRACTOR_PHONE, contractor_msg)
+    else:
+        print(f"[NOTIFICATION] Contractor message:\n{contractor_msg}")
+        contractor_sent = True
+
     if customer_phone:
         customer_sent = send_sms(customer_phone, customer_msg)
+    else:
+        print(f"[NOTIFICATION] No customer phone provided, skipping SMS")
 
     return {
         "contractor_notified": contractor_sent,
@@ -68,14 +55,13 @@ def notify_booking(booking_details: dict, customer_phone: str = "") -> dict:
 
 
 if __name__ == "__main__":
-    print("Testing Notification agent (mock mode, no real Twilio keys yet)...\n")
+    print("Testing Notification agent...\n")
 
     test_booking = {
-        "date": "Tuesday April 15",
+        "date": "Tuesday 14 April 2026",
         "time": "10:00 AM",
         "service": "plumbing repair",
         "name": "John Smith",
-        "phone": "not provided",
     }
 
     result = notify_booking(test_booking, customer_phone="")

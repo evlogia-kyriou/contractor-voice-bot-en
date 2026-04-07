@@ -1,12 +1,12 @@
 import os
-from dotenv import load_dotenv
+from dotenv import load_dotenv, find_dotenv
 from agents.receptionist import classify_intent, greet
 from agents.faq import answer_question
 from agents.booking import extract_booking_details, confirm_booking, book_with_calendar
 from agents.escalation import handle_escalation
 from agents.notification import notify_booking
 
-load_dotenv()
+load_dotenv(find_dotenv(), override=True)
 
 
 def run_conversation(caller_utterance: str, customer_phone: str = "") -> dict:
@@ -52,6 +52,10 @@ def run_conversation(caller_utterance: str, customer_phone: str = "") -> dict:
             "not able to find",
             "please rephrase",
             "unclear",
+            "didn't quite catch",
+            "didn't catch",
+            "repeat that",
+            "come again",
         ]
 
         response_lower = response.lower()
