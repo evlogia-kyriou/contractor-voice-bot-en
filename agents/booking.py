@@ -1,4 +1,5 @@
 import os
+from integrations.calendar import get_available_slots, book_appointment as calendar_book
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from crewai import Agent, Task, Crew, Process, LLM
@@ -137,3 +138,66 @@ if __name__ == "__main__":
             print(f"  {k}: {v}")
         confirmation = confirm_booking(details)
         print(f"Confirmation: {confirmation}\n")
+
+def book_with_calendar(
+    caller_utterance: str,
+    customer_phone: str = "",
+) -> dict:
+    details = extract_booking_details(caller_utterance)
+    date = details.get("date", "not specified")
+    time = details.get("time", "not specified")
+    service = details.get("service", "general service")
+    name = details.get("name", "Customer")
+
+    if date == "not specified":
+        return {
+            "success": False,
+            "details": details,
+            "confirmation": "I did not catch the date you wanted. Could you tell me which day works best for you?",
+        }
+
+    available = get_available_slots(date)
+
+    if not available:
+        return {
+            "success": False,
+            "details": details,
+            "confirmation": f"It looks like we are fully booked on {date}. Could you suggest another day?",
+        }
+
+    if time == "not specified" or time == "morning":
+        chosen_time = available[0]
+    elif time == "afternoon":
+        afternoon_slots = [s for s in available if int(s.split(":")[0]) >= 12]
+        chosen_time = afternoon_slots[0] if afternoon_slots else available[0]
+    else:
+        chosen_time = time
+
+    result = calendar_book(
+        summary=service,
+        date_str=date,
+        time_str=chosen_time,
+        customer_name=name,
+        customer_phone=customer_phone,
+        duration_minutes=120,
+    )
+
+    if result["success"]:
+        confirmation = confirm_booking({
+            "date": result["start"],
+            "time": chosen_time,
+            "service": service,
+            "name": name,
+        })
+        return {
+            "success": True,
+            "details": details,
+            "calendar_result": result,
+            "confirmation": confirmation,
+        }
+    else:
+        return {
+            "success": False,
+            "details": details,
+            "confirmation": "I had trouble booking that slot. Let me have someone from our team call you back to confirm.",
+        }

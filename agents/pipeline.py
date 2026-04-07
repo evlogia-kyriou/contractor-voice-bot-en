@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 from agents.receptionist import classify_intent, greet
 from agents.faq import answer_question
-from agents.booking import extract_booking_details, confirm_booking
+from agents.booking import extract_booking_details, confirm_booking, book_with_calendar
 from agents.escalation import handle_escalation
 from agents.notification import notify_booking
 
@@ -75,22 +75,28 @@ def run_conversation(caller_utterance: str, customer_phone: str = "") -> dict:
 
     elif intent == "booking":
         print("→ Routing to Booking agent...")
-        details = extract_booking_details(caller_utterance)
-        result["booking_details"] = details
-        print(f"→ Booking details: {details}")
-
-        # Confirm the booking
-        confirmation = confirm_booking(details)
-        result["response"] = confirmation
+        booking_result = book_with_calendar(caller_utterance, customer_phone)
+        result["booking_details"] = booking_result.get("details")
         result["agent_used"] = "booking"
-        print(f"→ Confirmation: {confirmation}")
 
-        # Step 3: Notify contractor and customer
-        print("→ Routing to Notification agent...")
-        notifications = notify_booking(details, customer_phone)
-        result["notifications"] = notifications
-        print(f"→ Contractor notified: {notifications['contractor_notified']}")
-        print(f"→ Customer notified: {notifications['customer_notified']}")
+        if booking_result["success"]:
+            result["response"] = booking_result["confirmation"]
+            print(f"→ Confirmation: {booking_result['confirmation']}")
+            if booking_result.get("calendar_result"):
+                print(f"→ Calendar link: {booking_result['calendar_result']['event_link']}")
+
+            print("→ Routing to Notification agent...")
+            notifications = notify_booking(
+                booking_result.get("details", {}),
+                customer_phone,
+            )
+            result["notifications"] = notifications
+            print(f"→ Contractor notified: {notifications['contractor_notified']}")
+            print(f"→ Customer notified: {notifications['customer_notified']}")
+        else:
+            result["response"] = booking_result["confirmation"]
+            result["agent_used"] = "escalation"
+            print(f"→ Booking failed, escalating: {booking_result['confirmation']}")
 
     else:
         print("→ Routing to Escalation agent...")
