@@ -1,0 +1,23 @@
+# Environment
+.env
+.venv/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# ChromaDB (rebuild from ingest)
+chroma_db/
+
+# MLflow
+mlruns/
+
+# Misc
+.DS_Store
+*.log
+*.egg-info/
+dist/
+build/

@@ -1,0 +1,84 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "contractor-voice-bot-en"
+version = "0.1.0"
+description = "Agentic voice bot for contractor appointment booking (English)"
+requires-python = ">=3.11"
+
+dependencies = [
+    # Orchestration
+    "crewai>=0.80.0",
+    "crewai-tools>=0.17.0",
+
+    # RAG
+    "llama-index>=0.11.0",
+    "llama-index-vector-stores-chroma>=0.2.0",
+    "llama-index-embeddings-huggingface>=0.3.0",
+    "chromadb>=0.5.0",
+
+    # LLM backend
+    "llama-index-llms-ollama>=0.3.0",
+    "openai>=1.50.0",
+
+    # Voice layer
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
+    "websockets>=13.0",
+    "faster-whisper>=1.0.0",
+    "piper-tts>=1.2.0",
+    "pydub>=0.25.0",
+
+    # Integrations
+    "twilio>=9.3.0",
+    "google-auth>=2.35.0",
+    "google-auth-oauthlib>=1.2.0",
+    "google-api-python-client>=2.149.0",
+
+    # Observability
+    "arize-phoenix>=5.0.0",
+    "openinference-instrumentation-llama-index>=3.0.0",
+    "openinference-instrumentation-crewai>=0.0.1",
+    "mlflow>=2.17.0",
+
+    # RAG evals
+    "ragas>=0.2.0",
+
+    # Metrics export for Grafana
+    "prometheus-fastapi-instrumentator>=7.0.0",
+
+    # Utils
+    "python-dotenv>=1.0.0",
+    "pydantic>=2.9.0",
+    "httpx>=0.27.0",
+    "tenacity>=9.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.24.0",
+    "ruff>=0.7.0",
+]
+
+[tool.hatch.envs.default]
+python = "3.11"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.hatch.build.targets.wheel]
+packages = [
+    "agents",
+    "rag",
+    "voice",
+    "integrations",
+    "observability",
+]
