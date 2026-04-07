@@ -5,6 +5,14 @@ from agents.faq import answer_question
 from agents.booking import extract_booking_details, confirm_booking, book_with_calendar
 from agents.escalation import handle_escalation
 from agents.notification import notify_booking
+import time
+from observability.phoenix_tracer import init_tracer
+from observability.mlflow_tracker import init_mlflow
+from observability.metrics import (
+    record_call_start, record_call_end,
+    record_intent, record_agent, record_booking, record_sms
+)
+from observability.mlflow_tracker import log_conversation
 
 load_dotenv(find_dotenv(), override=True)
 
@@ -25,6 +33,8 @@ def run_conversation(caller_utterance: str, customer_phone: str = "") -> dict:
         "agent_used": None,
     }
 
+    call_start = time.time()
+    record_call_start()
     print(f"\n{'='*60}")
     print(f"Caller: '{caller_utterance}'")
     print(f"{'='*60}")
@@ -88,7 +98,7 @@ def run_conversation(caller_utterance: str, customer_phone: str = "") -> dict:
             print(f"→ Confirmation: {booking_result['confirmation']}")
             if booking_result.get("calendar_result"):
                 print(f"→ Calendar link: {booking_result['calendar_result']['event_link']}")
-
+            record_booking()
             print("→ Routing to Notification agent...")
             notifications = notify_booking(
                 booking_result.get("details", {}),
@@ -109,10 +119,28 @@ def run_conversation(caller_utterance: str, customer_phone: str = "") -> dict:
         result["agent_used"] = "escalation"
         print(f"→ Escalation response: {response}")
 
+    latency = time.time() - call_start
+    record_intent(intent)
+    record_agent(result.get("agent_used", "unknown"), latency)
+    record_call_end()
+
+    print(f"→ Logging to MLflow: intent={intent}, agent={result.get('agent_used')}, latency={latency:.2f}s")
+    log_conversation(
+        utterance=caller_utterance,
+        intent=intent,
+        agent_used=result.get("agent_used", "unknown"),
+        response=result.get("response", ""),
+        latency_seconds=latency,
+        success=result.get("response") is not None,
+    )
+
     return result
 
 
 def run_demo() -> None:
+    init_tracer()
+    init_mlflow()
+    print("\n" + "="*60)
     """
     Runs the 10 demo scenarios that will be used for the client recording.
     """
