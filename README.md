@@ -31,8 +31,8 @@ flowchart TD
     C --> D{Receptionist Agent\nIntent Classification}
 
     D -->|faq| E[FAQ Agent\nRAG over contractor docs]
-    D -->|booking| F[Booking Agent\nGoogle Calendar read/write]
     D -->|escalate| G[Escalation Agent\nGraceful fallback]
+    D -->|booking| F[Booking Agent\nGoogle Calendar read/write]
 
     E --> H{FAQ resolved?}
     H -->|yes| K[Response]
