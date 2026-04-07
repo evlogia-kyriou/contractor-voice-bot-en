@@ -36,7 +36,7 @@ flowchart TD
 
     E --> H{FAQ resolved?}
     H -->|yes| K[Response]
-    H -->|no| G
+    H -->|no, escalate| G
 
     F --> I[Notification Agent\nTwilio SMS]
     I --> K
