@@ -24,18 +24,37 @@ Tested across 10 inbound call scenarios:
 
 ## Architecture
 
-Inbound call (Twilio)
-→ STT (faster-whisper, local)
-→ Multi-agent pipeline (CrewAI)
-→ Receptionist agent (intent classification)
-→ FAQ agent (RAG over contractor docs)
-→ Booking agent (Google Calendar read/write)
-→ Escalation agent (graceful fallback)
-→ Notification agent (Twilio SMS)
-→ TTS (Piper TTS, local)
-→ Response back to caller
+```mermaid
+flowchart TD
+    A([📞 Inbound Call]) --> B[Twilio Media Streams]
+    B --> C[faster-whisper STT\nlocal GPU]
+    C --> D{Receptionist Agent\nIntent Classification}
 
----
+    D -->|faq| E[FAQ Agent\nRAG over contractor docs]
+    D -->|booking| F[Booking Agent\nGoogle Calendar read/write]
+    D -->|escalate| G[Escalation Agent\nGraceful fallback]
+
+    E --> H{FAQ resolved?}
+    H -->|yes| K[Response]
+    H -->|no| G
+
+    F --> I[Notification Agent\nTwilio SMS]
+    I --> K
+
+    G --> K
+
+    K --> L[Piper TTS\nlocal GPU]
+    L --> M([🔊 Response to Caller])
+
+    style A fill:#4A90D9,color:#fff
+    style M fill:#27AE60,color:#fff
+    style D fill:#8E44AD,color:#fff
+    style E fill:#2980B9,color:#fff
+    style F fill:#2980B9,color:#fff
+    style G fill:#E74C3C,color:#fff
+    style I fill:#E67E22,color:#fff
+    style H fill:#F39C12,color:#fff
+```
 
 ## Tech Stack
 
