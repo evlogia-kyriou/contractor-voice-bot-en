@@ -13,12 +13,15 @@ architecture using open-source tooling.
 
 Tested across 10 inbound call scenarios:
 
-| Metric                       | Result           |
-| ---------------------------- | ---------------- |
-| Autonomous resolution rate   | 100% (10/10)     |
-| Intent routing accuracy      | 100%             |
-| Average booking confirmation | under 90 seconds |
-| Infrastructure cost          | $0               |
+| Metric                         | Result                              |
+| ------------------------------ | ----------------------------------- |
+| Autonomous resolution rate     | 100% (10/10)                        |
+| Intent routing accuracy        | 100%                                |
+| Real calendar bookings created | 3                                   |
+| Real SMS notifications sent    | 4                                   |
+| Infrastructure cost            | $0                                  |
+| LLM inference                  | Local Ollama (llama3.1:8b-instruct) |
+| Observability                  | Phoenix + MLflow + Grafana live     |
 
 ---
 
@@ -123,32 +126,48 @@ docker compose up -d
 
 ---
 
-## Project Structure
+## Project structure
 
+```
 agents/
-├── receptionist.py # Intent classification + greeting
-├── faq.py # RAG-powered FAQ answering
-├── booking.py # Appointment extraction + confirmation
-├── escalation.py # Graceful fallback handling
-├── notification.py # Twilio SMS routing
-└── pipeline.py # Full 10-scenario integration test
-rag/
-├── ingest.py # Document chunking + ChromaDB ingestion
-├── query.py # Ollama-powered retrieval query engine
-└── evals/
-├── ragas_suite.py # Full RAGAS eval (requires LLM)
-└── ragas_suite_non-llm.py # RougeL baseline (no LLM needed)
-observability/
-└── phoenix_tracer.py # Arize Phoenix tracer initialisation
-voice/ # Phase 4: Twilio Media Streams + STT/TTS
-integrations/ # Phase 3: Google Calendar + Twilio SMS
-contractor_docs/
-└── contractor_en.md # Source FAQ document (ABC Plumbing & HVAC)
-docker/
-├── docker-compose.yml # Full observability stack
-└── prometheus.yml # Prometheus scrape config
+├── receptionist.py     # Intent classification + greeting
+├── faq.py              # RAG-powered FAQ answering
+├── booking.py          # Appointment extraction + confirmation
+├── escalation.py       # Graceful fallback handling
+├── notification.py     # Twilio SMS routing
+└── pipeline.py         # Full 10-scenario integration test
 
----
+rag/
+├── ingest.py           # Document chunking + ChromaDB ingestion
+├── query.py            # Ollama-powered retrieval query engine
+└── evals/
+    ├── ragas_suite.py          # Full RAGAS eval (requires LLM)
+    └── ragas_suite_non-llm.py  # RougeL baseline (no LLM needed)
+
+observability/
+├── phoenix_tracer.py   # Arize Phoenix tracer initialisation
+├── mlflow_tracker.py   # MLflow experiment + run logging
+└── metrics.py          # Prometheus counters and histograms
+
+voice/
+├── server.py           # FastAPI WebSocket server
+├── stt.py              # faster-whisper STT adapter
+├── tts.py              # Piper TTS adapter
+├── audio.py            # mulaw audio conversion utilities
+└── client.html         # Browser test client
+
+integrations/
+├── calendar.py         # Google Calendar OAuth + read/write
+└── sms.py              # Twilio SMS via Messaging Service
+
+contractor_docs/
+└── contractor_en.md    # Source FAQ document (ABC Plumbing & HVAC)
+
+docker/
+├── docker-compose.yml  # Full observability stack
+├── prometheus.yml      # Prometheus scrape config
+└── grafana_dashboard.json
+```
 
 ## Setup
 
@@ -214,10 +233,14 @@ voice layer, and adds WhatsApp and Telegram notification channels.
 
 ## Roadmap
 
-- [ ] Phase 3: Google Calendar OAuth + real Twilio SMS
-- [ ] Phase 4: Twilio Media Streams + faster-whisper + Piper TTS
-- [ ] Phase 5: Full Arize Phoenix + Grafana instrumentation
-- [ ] Phase 6: End-to-end demo recording
+- [x] Phase 0: Foundation + Docker observability stack
+- [x] Phase 1: RAG pipeline + ChromaDB + RAGAS baseline
+- [x] Phase 2: All 5 CrewAI agents + full pipeline (100% resolution rate)
+- [x] Phase 3: Google Calendar OAuth + Twilio SMS (real bookings + notifications)
+- [x] Phase 4: Twilio Media Streams + faster-whisper STT + Piper TTS
+- [x] Phase 5: Arize Phoenix + MLflow + Prometheus + Grafana all wired
+- [ ] Phase 6: STT/TTS moved to PC GPU for production-grade latency
+- [ ] Phase 7: End-to-end demo recording
 
 ---
 
