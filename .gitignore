@@ -20,5 +20,7 @@ mlruns/
 *.log
 *.egg-info/
 dist/
-build/integrations/credentials.json
+build/
+
+integrations/credentials.json
 integrations/token.json
